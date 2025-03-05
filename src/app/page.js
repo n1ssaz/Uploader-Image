@@ -47,16 +47,18 @@ export default function Home() {
           />
         </div>
         {files.length > 0 && (
-          <div className="w-full max-w-2xl  bg-white p-4 rounded-lg shadow-md h-[500px] overflow-y-scroll">
+          <div className="w-full max-w-2xl bg-white p-4 rounded-lg shadow-md h-[500px] overflow-y-scroll mx-auto">
             <h3 className="text-lg font-semibold text-gray-700 mb-3">Uploaded Files</h3>
-            <div className="space-y-3">
+
+            {/* Show files in Grid or List view */}
+            <div className={`${view === "grid" ? "grid grid-cols-3 gap-4" : "flex flex-col space-y-3"}`}>
               {files.map((file) => (
                 <div
                   key={file.name}
                   className="p-3 bg-gray-200 text-gray-700 rounded-lg flex items-center justify-between"
                 >
                   <span className="truncate w-40">{file.name}</span>
-                  <img src={file.preview} alt="preview" className="w-12 h-12 object-cover rounded-lg" />
+                  <img src={file.preview} alt="preview" className="w-16 h-16 object-cover rounded-lg" />
                 </div>
               ))}
             </div>
