@@ -1,5 +1,12 @@
-"use client"
+"use client";
+import { useState } from "react";
+import SortFilter from "@/component/SortFilter";
+
 export default function Home() {
+  const [sortOption, setSortOption] = useState("name");
+  const [category, setCategory] = useState("all");
+  const [view, setView] = useState("grid");
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -21,8 +28,21 @@ export default function Home() {
       </header>
 
       {/* Body */}
-      <main className="flex-1 flex items-center justify-center bg-gray-100">
-        <h2 className="text-2xl font-semibold">Welcome to the Image Upload Platform</h2>
+      <main className="flex-1 bg-gray-100 p-6">
+        {/* Sorting & Filtering Section */}
+        <SortFilter
+          onSortChange={setSortOption}
+          onCategoryChange={setCategory}
+          onViewChange={setView}
+        />
+
+        {/* File Listing */}
+        <div className={`mt-4 ${view === "grid" ? "grid grid-cols-3 gap-4" : "flex flex-col space-y-2"}`}>
+          {/* Example Files */}
+          <div className="p-4 bg-white shadow rounded">File 1</div>
+          <div className="p-4 bg-white shadow rounded">File 2</div>
+          <div className="p-4 bg-white shadow rounded">File 3</div>
+        </div>
       </main>
     </div>
   );
