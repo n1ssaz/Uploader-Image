@@ -5,7 +5,7 @@ export default function SortFilter({ onSortChange, onCategoryChange, onViewChang
     const [view, setView] = useState("grid");
     const handleViewChange = (newView) => {
         setView(newView);
-        onViewChange(newView); // Notify parent (index.js) of the view change
+        onViewChange(newView);
     };
     return (
         <div className="flex items-center space-x-4 p-4 bg-gray-100 w-full max-w-4xl">

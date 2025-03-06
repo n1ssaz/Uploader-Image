@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Modal } from "antd"; // Ant Design Modal
+import { Modal } from "antd";
 import SortFilter from "@/component/SortFilter";
 import UploadBox from "@/component/UploadBox";
 
@@ -9,7 +9,7 @@ export default function Home() {
   const [sortOption, setSortOption] = useState("name");
   const [category, setCategory] = useState("all");
   const [view, setView] = useState("grid");
-  const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
@@ -25,7 +25,7 @@ export default function Home() {
           <button className="px-5 py-2 bg-green-600 rounded-lg hover:bg-green-700 transition duration-200">
             Register
           </button>
-          {/* Upload Button that opens modal */}
+          {/* Upload Button */}
           <button
             className="px-5 py-2 bg-yellow-500 rounded-lg hover:bg-yellow-600 transition duration-200"
             onClick={() => setIsModalOpen(true)}
@@ -36,9 +36,7 @@ export default function Home() {
       </header>
 
       {/* Sorting & Filtering Section */}
-
       <main className="flex flex-col flex-1 items-center  p-6 space-y-6">
-        {/* Sorting & Filtering Section */}
         <div className="bg-gray-100 p-6 flex flex-col items-start w-full">
           <SortFilter
             onSortChange={setSortOption}
@@ -50,7 +48,6 @@ export default function Home() {
           <div className="w-full max-w-2xl bg-white p-4 rounded-lg shadow-md h-[500px] overflow-y-scroll mx-auto">
             <h3 className="text-lg font-semibold text-gray-700 mb-3">Uploaded Files</h3>
 
-            {/* Show files in Grid or List view */}
             <div className={`${view === "grid" ? "grid grid-cols-3 gap-4" : "flex flex-col space-y-3"}`}>
               {files.map((file) => (
                 <div
@@ -72,8 +69,8 @@ export default function Home() {
         title="Upload Files"
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
-        footer={null} // Removes default footer
-        centered // Centers the modal on the screen
+        footer={null}
+        centered
       >
         <UploadBox onClose={() => setIsModalOpen(false)} files={files} setFiles={setFiles} />
       </Modal>
