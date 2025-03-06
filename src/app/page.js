@@ -6,6 +6,7 @@ import UploadBox from "@/component/UploadBox";
 import SearchBar from "@/component/SearchBar";
 import Register from "@/component/Register";
 import api from "@/api/api";
+import { sortFiles } from "@/utils/utils";
 
 export default function Home() {
   const [loggedUser, setLoggedUser] = useState(null);
@@ -14,7 +15,6 @@ export default function Home() {
   const [sortOption, setSortOption] = useState("name-asc");
   const [view, setView] = useState("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showInitialMessage, setShowInitialMessage] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
@@ -27,10 +27,7 @@ export default function Home() {
       console.error("Error fetching files:", error);
     }
   };
-
-  useEffect(() => {
-    getFiles();
-  }, [loggedUser?.userId]);
+  ;
 
   const saveFiles = async (newFiles) => {
     try {
@@ -45,28 +42,15 @@ export default function Home() {
 
   const resetSearch = () => setSearchQuery("");
 
-  const sortedFiles = [...files].sort((a, b) => {
-    switch (sortOption) {
-      case "name-asc":
-        return a.name.localeCompare(b.name);
-      case "name-desc":
-        return b.name.localeCompare(a.name);
-      case "date-newest":
-        return new Date(b.date) - new Date(a.date);
-      case "date-oldest":
-        return new Date(a.date) - new Date(b.date);
-      case "size-smallest":
-        return a.size - b.size;
-      case "size-largest":
-        return b.size - a.size;
-      default:
-        return 0;
-    }
-  });
+  const sortedFiles = sortFiles(files, sortOption)
 
   const filteredFiles = sortedFiles.filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  useEffect(() => {
+    getFiles();
+  }, [loggedUser?.userId])
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
@@ -95,26 +79,27 @@ export default function Home() {
             <span className="text-lg">Hello, {loggedUser.username} </span>
           )}
           {loggedUser && (
-            <button
-              className="px-5 py-2 bg-yellow-500 rounded-lg hover:bg-yellow-600 transition duration-200"
-              onClick={() => {
-                resetSearch();
-                setIsModalOpen(true);
-              }}
-            >
-              Upload
-            </button>
-          )}
-          {loggedUser && (
-            <button
-              className="px-5 py-2 bg-yellow-500 rounded-lg hover:bg-yellow-600 transition duration-200"
-              onClick={() => {
-                setFiles([])
-                setLoggedUser(null);
-              }}
-            >
-              Log out
-            </button>
+            <>
+              <button
+                className="px-5 py-2 bg-yellow-500 rounded-lg hover:bg-yellow-600 transition duration-200"
+                onClick={() => {
+                  resetSearch();
+                  setIsModalOpen(true);
+                }}
+              >
+                Upload
+              </button>
+
+              <button
+                className="px-5 py-2 bg-yellow-500 rounded-lg hover:bg-yellow-600 transition duration-200"
+                onClick={() => {
+                  setFiles([])
+                  setLoggedUser(null);
+                }}
+              >
+                Log out
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -136,7 +121,7 @@ export default function Home() {
         </div>
 
         {/* Show initial upload message */}
-        {files.length === 0 && showInitialMessage && (
+        {files.length === 0 && (
           <div className="flex flex-1 justify-center items-center">
             <p className="text-gray-600 text-xl font-medium">Upload a file to get started!</p>
           </div>
@@ -176,20 +161,19 @@ export default function Home() {
 
       {/* Register & Login Modal */}
       <Register
-        isLoginOpen={isLoginOpen}
-        setLoggedUser={setLoggedUser}
-        isRegisterOpen={isRegisterOpen}
-        closeLogin={() => setIsLoginOpen(false)}
-        closeRegister={() => setIsRegisterOpen(false)}
-        openLogin={() => {
-          setIsRegisterOpen(false);
-          setIsLoginOpen(true);
-        }}
-        openRegister={() => {
+        isOpen={isLoginOpen || isRegisterOpen}
+        onClose={() => {
           setIsLoginOpen(false);
-          setIsRegisterOpen(true);
+          setIsRegisterOpen(false);
         }}
+        isLogin={isLoginOpen}
+        toggleAuth={() => {
+          setIsLoginOpen(!isLoginOpen);
+          setIsRegisterOpen(!isRegisterOpen);
+        }}
+        setLoggedUser={setLoggedUser}
       />
+
 
       {/* Upload Modal */}
       <Modal
