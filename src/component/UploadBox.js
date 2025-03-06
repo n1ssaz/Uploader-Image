@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Progress, Button, message, Card } from "antd";
 import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
+import api from "@/api/api";
 
-export default function UploadBox({ onClose, files, setFiles }) {
+export default function UploadBox({ onClose, files, saveFiles, setFiles }) {
     const [uploadProgress, setUploadProgress] = useState(0);
 
     const onDrop = (acceptedFiles) => {
@@ -25,9 +26,11 @@ export default function UploadBox({ onClose, files, setFiles }) {
 
         if (validFiles.length === 0) return;
 
-        setFiles([...files, ...validFiles.map((file) =>
-            Object.assign(file, { preview: URL.createObjectURL(file) })
-        )]);
+        saveFiles([...validFiles.map((file) => {
+            const name = file.name
+            const date = file.date
+            return { ...file, name, date, preview: URL.createObjectURL(file) }
+        })]);
 
         let progress = 0;
         const interval = setInterval(() => {
@@ -39,8 +42,10 @@ export default function UploadBox({ onClose, files, setFiles }) {
         onClose();
     };
 
-    const removeFile = (fileToRemove) => {
-        setFiles(files.filter(file => file.name !== fileToRemove.name));
+    const removeFile = async (file) => {
+        const response = await api.delete(`/files/${file}`);
+        console.log(response)
+        setFiles(response.data);
     };
 
     const { getRootProps, getInputProps } = useDropzone({ onDrop });
@@ -71,13 +76,13 @@ export default function UploadBox({ onClose, files, setFiles }) {
                                     <span className="text-sm text-gray-500">{(file.size / 1024).toFixed(2)} KB</span>
                                 </div>
 
-                                {file.type.startsWith("image/") ? (
+                                {file?.type?.startsWith("image/") ? (
                                     <img src={file.preview} alt="preview" className="w-16 h-16 object-cover rounded-lg" />
                                 ) : (
                                     <video src={file.preview} controls className="w-16 h-16 object-cover rounded-lg" />
                                 )}
 
-                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => removeFile(file)} />
+                                <Button type="text" danger icon={<DeleteOutlined />} onClick={() => removeFile(file._id)} />
                             </div>
                         ))}
                     </div>
