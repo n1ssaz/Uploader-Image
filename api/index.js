@@ -24,7 +24,6 @@ const clients = [];
 
 // SSE Endpoint - Listen for Events
 app.get("/events", (req, res) => {
-  console.log("🔗 New SSE Connection");
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -35,12 +34,10 @@ app.get("/events", (req, res) => {
   // Remove client on disconnect
   req.on("close", () => {
     clients.splice(clients.indexOf(res), 1);
-    console.log("❌ SSE Connection Closed");
   });
 });
 
 const sendEventToClients = (event, data) => {
-  console.log(`📢 Broadcasting SSE Event: ${event}`, data);
 
   clients.forEach(client => {
     client.write(`event: ${event}\n`);
@@ -102,7 +99,6 @@ app.post("/files/:id", async (req, res) => {
     sendEventToClients("file-upload", { message: "📢 A new file was uploaded!", files });
     res.status(200).json(updatedFiles);
   } catch (error) {
-    console.error("❌ Error in file upload:", error);
     res.status(500).json({ error: "File upload failed" });
   }
 });
