@@ -30,7 +30,6 @@ export default function Register({ isOpen, onClose, isLogin, toggleAuth, setLogg
             setPassword("");
             onClose();
         } catch (error) {
-            console.log(error);
             alert(error.response?.data?.message || (isLogin ? "Login failed." : "Registration failed."));
         } finally {
             setLoading(false);

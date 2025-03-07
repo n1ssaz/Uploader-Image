@@ -44,7 +44,6 @@ export default function UploadBox({ onClose, files, saveFiles, setFiles }) {
 
     const removeFile = async (file) => {
         const response = await api.delete(`/files/${file}`);
-        console.log(response)
         setFiles(response.data);
     };
 

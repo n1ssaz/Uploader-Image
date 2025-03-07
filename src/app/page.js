@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Modal } from "antd";
+import { BellOutlined } from "@ant-design/icons";
 import SortFilter from "@/component/SortFilter";
 import UploadBox from "@/component/UploadBox";
 import SearchBar from "@/component/SearchBar";
 import Register from "@/component/Register";
 import api from "@/api/api";
 import { sortFiles } from "@/utils/utils";
+import { toast } from "react-toastify";
 
 export default function Home() {
   const [loggedUser, setLoggedUser] = useState(null);
@@ -17,17 +19,13 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-
   const getFiles = async () => {
     try {
       if (!loggedUser?.userId) return;
       const response = await api.get(`/files/${loggedUser.userId}`);
       setFiles(response.data);
-    } catch (error) {
-      console.error("Error fetching files:", error);
-    }
+    } catch (error) { }
   };
-  ;
 
   const saveFiles = async (newFiles) => {
     try {
@@ -35,31 +33,74 @@ export default function Home() {
         files: newFiles,
       });
       setFiles(response.data);
-    } catch (error) {
-      console.error("Error saving files:", error);
-    }
+    } catch (error) { }
   };
 
   const resetSearch = () => setSearchQuery("");
 
-  const sortedFiles = sortFiles(files, sortOption)
+  const sortedFiles = sortFiles(files, sortOption);
 
   const filteredFiles = sortedFiles.filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const showNotification = () => {
+    toast.success("This is your notification message!", {
+      position: "top-right",
+      autoClose: 3000, // Closes after 3 seconds
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
 
   useEffect(() => {
-    getFiles();
-  }, [loggedUser?.userId])
+    const eventSource = new EventSource("http://localhost:3001/events");
+
+    eventSource.addEventListener("file-upload", (event) => {
+      try {
+        console.log("📩 Received SSE Event:", event);
+
+        const data = JSON.parse(event.data);
+        console.log("🔔 SSE Data Received:", data);
+
+        toast.success(`📢 ${data.message}`, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } catch (err) {
+        console.error("❌ SSE Parsing Error:", err);
+      }
+    });
+
+    eventSource.onerror = (err) => {
+      console.error("❌ SSE Connection Error:", err);
+    };
+
+    return () => eventSource.close();
+  }, []);
+
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Header */}
       <header className="flex justify-between items-center bg-gray-800 text-white p-5 shadow-lg">
         <h1 className="text-2xl font-semibold">Imgur</h1>
+        {/* Buttons & Notifications */}
+        <div className="space-x-4 flex items-center">
+          {loggedUser && (
+            <button
+              className="relative px-4 py-2 text-white rounded-lg hover:bg-gray-700 transition duration-200"
+              onClick={showNotification}
+            >
+              <BellOutlined className="text-xl" />
+            </button>
+          )}
 
-        {/* Buttons */}
-        <div className="space-x-4">
           {!loggedUser ? (
             <>
               <button
@@ -91,9 +132,9 @@ export default function Home() {
               </button>
 
               <button
-                className="px-5 py-2 bg-yellow-500 rounded-lg hover:bg-yellow-600 transition duration-200"
+                className="px-5 py-2 bg-red-500 rounded-lg hover:bg-red-600 transition duration-200"
                 onClick={() => {
-                  setFiles([])
+                  setFiles([]);
                   setLoggedUser(null);
                 }}
               >
@@ -173,7 +214,6 @@ export default function Home() {
         }}
         setLoggedUser={setLoggedUser}
       />
-
 
       {/* Upload Modal */}
       <Modal
