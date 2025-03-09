@@ -1,132 +1,46 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import { ObjectId } from "mongodb";
-import { startMemoryDB, stopMemoryDB, getDB } from "./db/memoryDB.js";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-
+import { initDatabase } from "./models/index.js";
+import userRoutes from "./routes/userRoutes.js";
+import postRoutes from "./routes/postRoutes.js"
+import notificationRoutes from "./routes/notificationRoutes.js";
+import { eventsHandler } from "./config/sseService.js";
+// Use notification routes
 dotenv.config();
 
-const PORT = process.env.PORT || 3001;
 const app = express();
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-await startMemoryDB();
 
-const getUsersCollection = () => getDB().collection("users");
-const getFilesCollection = () => getDB().collection("files");
+app.use("/uploads", express.static("uploads"));
 
-// Store active SSE clients
-const clients = [];
 
-// SSE Endpoint - Listen for Events
-app.get("/events", (req, res) => {
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log(`📥 [${req.method}] ${req.originalUrl} | Query: ${JSON.stringify(req.query)}`);
 
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+  if (Object.keys(req.body).length > 0) {
+    console.log(`🔹 Request Body: ${JSON.stringify(req.body)}`);
+  }
 
-  clients.push(res);
-
-  // Remove client on disconnect
-  req.on("close", () => {
-    clients.splice(clients.indexOf(res), 1);
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(`📤 Response: ${res.statusCode} (${duration}ms)`);
   });
+
+  next();
 });
 
-const sendEventToClients = (event, data) => {
-
-  clients.forEach(client => {
-    client.write(`event: ${event}\n`);
-    client.write(`data: ${JSON.stringify(data)}\n\n`);
-  });
-};
-
-// User Registration
-app.post("/register", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await getUsersCollection().insertOne({ username, password: hashedPassword });
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Registration failed" });
-  }
+// Routes
+app.use("/user", userRoutes);
+app.use("/posts", postRoutes);
+app.use("/notifications", notificationRoutes);
+app.get("/events", eventsHandler); // SSE Endpoint
+// Initialize database and start server
+initDatabase().then(() => {
+  app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
 });
-
-// User Login
-app.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const user = await getUsersCollection().findOne({ username });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: "Invalid username or password" });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "your-secret-key", {
-      expiresIn: "1h",
-    });
-    res.status(200).json({ token, username, userId: user._id });
-  } catch (error) {
-    res.status(500).json({ error: "Login failed" });
-  }
-});
-
-// Get all files for a user
-app.get("/files/:id", async (req, res) => {
-  try {
-    const files = await getFilesCollection().find({ id: req.params.id }).toArray();
-    res.status(200).json(files);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to retrieve files" });
-  }
-});
-
-// ✅ Upload Files and Trigger SSE Notification
-app.post("/files/:id", async (req, res) => {
-  try {
-    const { files } = req.body;
-    if (!files || !Array.isArray(files)) {
-      return res.status(400).json({ error: "Invalid files data" });
-    }
-
-    const collection = getFilesCollection();
-    await collection.insertMany(files.map((file) => ({ ...file, id: req.params.id })));
-    const updatedFiles = await collection.find({ id: req.params.id }).toArray();
-    sendEventToClients("file-upload", { message: "📢 A new file was uploaded!", files });
-    res.status(200).json(updatedFiles);
-  } catch (error) {
-    res.status(500).json({ error: "File upload failed" });
-  }
-});
-
-// Delete a file
-app.delete("/files/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "Invalid ID format" });
-    }
-
-    const result = await getFilesCollection().deleteOne({ _id: new ObjectId(id) });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "File not found" });
-    }
-
-    const updatedFiles = await getFilesCollection().find().toArray();
-    res.status(200).json(updatedFiles);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to delete file" });
-  }
-});
-
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-  await stopMemoryDB();
-  process.exit(0);
-});
-
-app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
